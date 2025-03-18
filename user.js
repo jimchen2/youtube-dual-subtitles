@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube Dual Subtitles for French, German, Russian, Ukrainian
 // @namespace    http://tampermonkey.net/
-// @version      2.0
+// @version      2.1
 // @license      Unlicense
 // @description  Add dual subtitles to YouTube videos
 // @author       Jim Chen
@@ -13,7 +13,6 @@
 (function () {
   "use strict";
   let lastUrl = location.href;
-  let processingSubtitles = false;
   const observer = new MutationObserver(() => {
     if (location.href !== lastUrl) {
       lastUrl = location.href;
@@ -24,12 +23,7 @@
   handleVideoNavigation();
   async function handleVideoNavigation() {
     removeSubs();
-
-    if (processingSubtitles == true) return;
-    processingSubtitles = true;
     let subtitleURL = await extractSubtitleUrl();
-    processingSubtitles = false;
-
     if (subtitleURL == null) return;
     await addOneSubtitle(subtitleURL + "&tlang=en");
     await addOneSubtitle(subtitleURL);
@@ -40,7 +34,7 @@
       const patterns = {
         standard: /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&]+)/,
         embed: /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([^?]+)/,
-        mobile: /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([^?]+)/,
+        mobile: /(?:https?:\/\/)?m\.youtube\.com\/watch\?v=([^&]+)/,
       };
 
       let videoID = null;
