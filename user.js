@@ -8,7 +8,10 @@
 // @homepage     https://jimchen.me
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
+// @match        https://www.youtube-nocookie.com/*
 // @run-at       document-idle
+// @downloadURL https://update.greasyfork.org/scripts/528708/YouTube%20Dual%20Subtitles%20for%20French%2C%20German%2C%20Russian%2C%20Ukrainian.user.js
+// @updateURL https://update.greasyfork.org/scripts/528708/YouTube%20Dual%20Subtitles%20for%20French%2C%20German%2C%20Russian%2C%20Ukrainian.meta.js
 // ==/UserScript==
 (function () {
   "use strict";
@@ -35,6 +38,7 @@
         standard: /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&]+)/,
         embed: /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([^?]+)/,
         mobile: /(?:https?:\/\/)?m\.youtube\.com\/watch\?v=([^&]+)/,
+        nocookie: /(?:https?:\/\/)?(?:www\.)?youtube-nocookie\.com\/embed\/([^?]+)/,
       };
 
       let videoID = null;
@@ -45,6 +49,8 @@
         videoID = url.match(patterns.embed)[1];
       } else if (patterns.mobile.test(url)) {
         videoID = url.match(patterns.mobile)[1];
+      } else if (patterns.nocookie.test(url)) {
+        videoID = url.match(patterns.nocookie)[1];
       }
 
       return videoID;
