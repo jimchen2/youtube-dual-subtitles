@@ -1,7 +1,7 @@
 // popup.js
 
 // Import the full language list from its own file
-import { allLanguages } from './languages.js';
+import { allLanguages } from "./languages.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   // --- DOM Elements ---
@@ -16,22 +16,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Configuration ---
   // Define the 5 main official languages of UN + German, Japanese, Ukrainian
-  const mainLangCodes = ['zh-Hans', 'zh-Hant', 'en', 'ru', 'es', 'fr', 'de', 'ja', 'uk'];
+  const mainLangCodes = ["zh-Hans", "zh-Hant", "en", "ru", "es", "fr", "de", "ja", "uk"];
 
   let langCheckboxes; // Will be populated after UI is built
 
   // --- UI Population ---
   function populateLanguageOptions() {
     // Sort languages alphabetically by their Russian name for better usability
-    allLanguages.sort((a, b) => 
-      a.languageName.simpleText.localeCompare(b.languageName.simpleText, 'ru')
-    );
-      
+    allLanguages.sort((a, b) => a.languageName.simpleText.localeCompare(b.languageName.simpleText, "ru"));
+
     // Create option groups for the target language dropdown
-    const mainOptgroup = document.createElement('optgroup');
-    mainOptgroup.label = 'Main Languages';
-    const otherOptgroup = document.createElement('optgroup');
-    otherOptgroup.label = 'Other Languages';
+    const mainOptgroup = document.createElement("optgroup");
+    mainOptgroup.label = "Main Languages";
+    const otherOptgroup = document.createElement("optgroup");
+    otherOptgroup.label = "Other Languages";
 
     // Helper function to create a checkbox item
     const createCheckboxItem = (lang) => {
@@ -48,7 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
       div.appendChild(label);
       return div;
     };
-    
+
     allLanguages.forEach((lang) => {
       const isMainLang = mainLangCodes.includes(lang.languageCode);
 
@@ -59,9 +57,9 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         otherLangsContainer.appendChild(checkboxItem);
       }
-      
+
       // 2. Populate Target Language Dropdown
-      const option = document.createElement('option');
+      const option = document.createElement("option");
       option.value = lang.languageCode;
       option.textContent = lang.languageName.simpleText;
       if (isMainLang) {
@@ -73,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     targetLangSelect.appendChild(mainOptgroup);
     targetLangSelect.appendChild(otherOptgroup);
-    
+
     // After creating all checkboxes, select them for event handling
     langCheckboxes = document.querySelectorAll('#originalLangs input[type="checkbox"]');
   }
@@ -110,10 +108,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Event Listeners ---
   function addEventListeners() {
     // Use event delegation for checkboxes for performance
-    document.getElementById('originalLangs').addEventListener("change", (event) => {
-        if (event.target.type === 'checkbox') {
-            saveSettings();
-        }
+    document.getElementById("originalLangs").addEventListener("change", (event) => {
+      if (event.target.type === "checkbox") {
+        saveSettings();
+      }
     });
     targetLangSelect.addEventListener("change", saveSettings);
     autoPlayCheckbox.addEventListener("change", saveSettings);
