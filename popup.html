@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dual Subtitles Settings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <fieldset>
+      <legend>Original Languages</legend>
+      <div id="originalLangs" class="checkbox-grid">
+        <!-- Checkboxes will be dynamically inserted here -->
+      </div>
+      <div class="button-group">
+        <button id="selectAll">Select All</button>
+        <button id="clearAll">Clear All</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Target Language</legend>
+      <select id="targetLang">
+        <option value="en">English</option>
+        <option value="es">Spanish</option>
+        <option value="fr">French</option>
+        <option value="ru">Russian</option>
+        <option value="zh-Hans">Chinese (Simplified)</option>
+        <option value="zh-Hant">Chinese (Traditional)</option>
+        <option value="de">German</option>
+        <option value="ja">Japanese</option>
+        <option value="it">Italian</option>
+        <option value="pt">Portuguese</option>
+        <option value="ko">Korean</option>
+        <option value="ar">Arabic</option>
+        <option value="hi">Hindi</option>
+      </select>
+    </fieldset>
+
+    <fieldset>
+      <legend>Options</legend>
+      <div class="option">
+        <input type="checkbox" id="autoPlay" />
+        <label for="autoPlay">Play after displaying subtitles</label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Actions</legend>
+        <button id="removeSubsBtn">Remove Subtitles on Current Video</button>
+    </fieldset>
+
+    <fieldset>
+      <legend>Status / Errors</legend>
+      <div id="errorBox">No errors.</div>
+    </fieldset>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

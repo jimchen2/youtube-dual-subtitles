@@ -1,7 +1,37 @@
+// content.js
 (function () {
   const isMobile = location.href.startsWith("https://m.youtube.com");
   let fired = false;
   let currentVideoID = extractYouTubeVideoID();
+
+  // --- SETTINGS (with defaults, to be overwritten by storage) ---
+  let settings = {
+    originalLangs: ['es', 'de', 'ru', 'ua', 'zh'],
+    targetLang: 'en',
+    autoPlay: true
+  };
+
+  // Function to load settings from storage
+  async function loadSettings() {
+    const data = await chrome.storage.local.get(settings);
+    settings = data;
+    console.log('[DUAL SUBS] Settings loaded:', settings);
+  }
+
+  // Function to send errors to the popup
+  function sendErrorToPopup(message) {
+    console.error(`[DUAL SUBS] Error: ${message}`);
+    chrome.runtime.sendMessage({ type: "error", message: message });
+  }
+
+  // --- MESSAGE LISTENER for commands from popup.js ---
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "removeSubtitles") {
+      removeSubs();
+      sendResponse({ status: "Subtitles removed" });
+    }
+    return true; // Indicates that the response is sent asynchronously
+  });
 
   // *****************************************************************
   // TRIGGER ONCE AND PREPARE FUTURE TRIGGERS (YOUTUBE IS SINGLE PAGE)
@@ -15,21 +45,16 @@
         handleVideoNavigation();
       });
     } else if (isMobile) {
+      // Mobile triggers (unchanged)
       window.addEventListener("popstate", handleVideoNavigation);
-
       const originalPushState = history.pushState;
-      const originalReplaceState = history.replaceState;
-
       history.pushState = function () {
-        const result = originalPushState.apply(this, arguments);
+        originalPushState.apply(this, arguments);
         handleVideoNavigation();
-        return result;
       };
-
       history.replaceState = function () {
-        const result = originalReplaceState.apply(this, arguments);
+        originalReplaceState.apply(this, arguments);
         handleVideoNavigation();
-        return result;
       };
     }
   }
@@ -40,6 +65,8 @@
 
   async function handleVideoNavigation() {
     console.log("handleVideoNavigation called");
+    await loadSettings(); // Load latest settings on each navigation
+
     const newVideoID = extractYouTubeVideoID();
     if (!newVideoID) {
       console.log("[DUAL SUBS] Not on a video page, returning");
@@ -60,17 +87,16 @@
     removeSubs();
 
     const languageCheckPassed = await checkLanguageCode();
-    if (!languageCheckPassed) return;
+    if (!languageCheckPassed) {
+        sendErrorToPopup("No suitable original language subtitles found.");
+        return;
+    }
 
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     let subtitleURL = null;
-
     for (let attempt = 0; attempt < 3 && subtitleURL == null; attempt++) {
-      if (attempt > 0) {
-        await sleep(5000);
-      }
-
+      if (attempt > 0) await sleep(5000);
       try {
         subtitleURL = await extractSubtitleUrl();
       } catch (error) {
@@ -78,40 +104,43 @@
       }
     }
 
-    if (subtitleURL == null) return;
+    if (subtitleURL == null) {
+        sendErrorToPopup("Could not extract subtitle URL. Timedtext not found.");
+        return;
+    }
 
     const url = new URL(subtitleURL);
-    if (url.searchParams.has("fmt")) {
-      url.searchParams.set("fmt", "vtt");
-    } else {
-      url.searchParams.set("fmt", "vtt");
-    }
-    url.searchParams.delete("tlang");
+    url.searchParams.set("fmt", "vtt");
+    url.searchParams.delete("tlang"); // Ensure no translation on original
+
+    // Create translated URL using target language from settings
     const transUrl = new URL(url);
-    transUrl.searchParams.set("tlang", "en");
-    const transSub = transUrl.toString();
-    console.log(`[DUAL SUBS] transSub ${transSub}`);
-    await addOneSubtitle(transSub);
-    console.log(`[DUAL SUBS] subtitleURL ${url.toString()}`);
+    transUrl.searchParams.set("tlang", settings.targetLang);
+
+    console.log(`[DUAL SUBS] Original Sub URL: ${url.toString()}`);
+    console.log(`[DUAL SUBS] Translated Sub URL: ${transUrl.toString()}`);
+    
+    await addOneSubtitle(transUrl.toString());
     await addOneSubtitle(url.toString());
-    console.log("[DUAL SUBS] AAA");
+    
     const subtitleButtonSelector = isMobile ? ".ytmClosedCaptioningButtonButton" : ".ytp-subtitles-button";
     const subtitleButton = document.querySelector(subtitleButtonSelector);
-    console.log("[DUAL SUBS] BBB");
     if (subtitleButton && subtitleButton.getAttribute("aria-pressed") === "true") {
-      console.log("[DUAL SUBS] YouTube's subtitle is switched on, switching it off...");
+      console.log("[DUAL SUBS] YouTube's subtitle is on, switching off...");
       subtitleButton.click();
     }
 
-    setTimeout(() => ensureVideoPlaying(), 500);
-    function ensureVideoPlaying() {
-      const video = document.querySelector("video");
-      if (video && video.paused) {
-        console.log("[DUAL SUBS] Video was paused, attempting to play...");
-        video.play();
-      }
+    if (settings.autoPlay) {
+      setTimeout(() => ensureVideoPlaying(), 500);
     }
-    console.log("[DUAL SUBS] CCC");
+  }
+
+  function ensureVideoPlaying() {
+    const video = document.querySelector("video");
+    if (video && video.paused) {
+      console.log("[DUAL SUBS] Video was paused, attempting to play...");
+      video.play();
+    }
   }
 
   // **********************************
@@ -119,13 +148,13 @@
   // **********************************
 
   function extractYouTubeVideoID() {
+    // ... (This function is unchanged)
     const url = window.location.href;
     const patterns = {
       standard: /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?(?:[^?&]+&)*v=([^&]+)/,
       embed: /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([^?]+)/,
       mobile: /(?:https?:\/\/)?m\.youtube\.com\/watch\?v=([^&]+)/,
     };
-
     let videoID = null;
     if (patterns.standard.test(url)) {
       videoID = url.match(patterns.standard)[1];
@@ -142,11 +171,12 @@
     script.setAttribute("type", "text/javascript");
     script.setAttribute("src", chrome.runtime.getURL(filePath));
     (document.head || document.documentElement).appendChild(script);
-    script.onload = () => script.remove(); // Clean up the script tag after it has run
+    script.onload = () => script.remove();
   }
 
   injectScript("injected.js");
 
+  // --- MODIFIED checkLanguageCode to use settings ---
   function checkLanguageCode() {
     return new Promise((resolve) => {
       let attempts = 0;
@@ -165,38 +195,30 @@
         }
 
         if (tracks && tracks.length > 0) {
-          console.log("[DUAL SUBS] Received tracks from injected script:", tracks);
+          console.log("[DUAL SUBS] Received tracks:", tracks);
 
-          // First, check for auto-generated tracks (a.de, a.es)
-          const autoTracks = tracks.filter(
-            (track) =>
-              track.languageCode && (track.languageCode.startsWith("a.de") || track.languageCode.startsWith("a.es"))
+          // Check for auto-generated tracks first (e.g., a.de)
+          const autoTracksFound = tracks.some(track => 
+            track.languageCode && settings.originalLangs.some(lang => track.languageCode.startsWith(`a.${lang}`))
           );
-
-          // If auto tracks exist, prioritize them
-          if (autoTracks.length > 0) {
-            const foundLanguages = autoTracks.map((track) => track.languageCode);
-            console.log("[DUAL SUBS] Auto-generated tracks found (prioritized):", foundLanguages.join(", "));
-            resolve(true);
-          } else {
-            // Fall back to any track containing de or es
-            const hasTargetLanguage = tracks.some(
-              (track) => track.languageCode && (track.languageCode.includes("de") || track.languageCode.includes("es"))
-            );
-
-            if (hasTargetLanguage) {
-              const foundLanguages = tracks
-                .filter(
-                  (track) =>
-                    track.languageCode && (track.languageCode.includes("de") || track.languageCode.includes("es"))
-                )
-                .map((track) => track.languageCode);
-              console.log("[DUAL SUBS] Language check passed. Found:", foundLanguages.join(", "));
+          
+          if(autoTracksFound) {
+              console.log("[DUAL SUBS] Auto-generated track found (prioritized).");
               resolve(true);
-            } else {
-              console.log("[DUAL SUBS] Target languages not found in received tracks.");
+              return;
+          }
+
+          // Fallback to any track containing the language code
+          const manualTracksFound = tracks.some(track =>
+            track.languageCode && settings.originalLangs.some(lang => track.languageCode.includes(lang))
+          );
+          
+          if(manualTracksFound){
+              console.log("[DUAL SUBS] Manual track found.");
+              resolve(true);
+          } else {
+              console.log(`[DUAL SUBS] Target languages (${settings.originalLangs.join(', ')}) not found in tracks.`);
               resolve(false);
-            }
           }
         } else {
           console.log("[DUAL SUBS] Player data not yet available. Will retry.");
@@ -207,16 +229,13 @@
 
       const intervalId = setInterval(() => {
         attempts++;
-        console.log(`[DUAL SUBS] Language check attempt ${attempts}/${maxAttempts}`);
-
         if (attempts > maxAttempts) {
-          console.log("[DUAL SUBS] Language check failed after all attempts. Target languages not found.");
+          console.log("[DUAL SUBS] Language check failed after all attempts.");
           clearInterval(intervalId);
-          document.removeEventListener("DUALSUBS_SEND_TRACKS", listener); // Clean up listener
+          document.removeEventListener("DUALSUBS_SEND_TRACKS", listener);
           resolve(false);
           return;
         }
-
         document.dispatchEvent(new CustomEvent("DUALSUBS_GET_TRACKS"));
       }, checkInterval);
     });
@@ -227,60 +246,41 @@
   // ****************************
 
   async function extractSubtitleUrl() {
+    // ... (This function is unchanged)
     const isMobile = location.href.startsWith("https://m.youtube.com");
     const subtitleButtonSelector = isMobile ? ".ytmClosedCaptioningButtonButton" : ".ytp-subtitles-button";
-
     if (isMobile) {
       document.querySelector("#movie_player").click();
       document.querySelector("#movie_player").click();
     }
-
-    async function findSubtitleButtonWithRetry(subtitleButtonSelector, maxAttempts = 3, delayMs = 1000) {
+    async function findSubtitleButtonWithRetry(selector, maxAttempts = 3, delayMs = 1000) {
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        const subtitleButton = document.querySelector(subtitleButtonSelector);
-        if (subtitleButton) return subtitleButton;
-        if (attempt < maxAttempts) {
-          await new Promise((resolve) => setTimeout(resolve, delayMs));
-        }
+        const button = document.querySelector(selector);
+        if (button) return button;
+        if (attempt < maxAttempts) await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
       return null;
     }
-
     const subtitleButton = await findSubtitleButtonWithRetry(subtitleButtonSelector);
-    if (!subtitleButton) return;
-
+    if (!subtitleButton) return null;
     const initialEntryCount = performance.getEntriesByType("resource").length;
-
-    // Toggle button twice to trigger timedtext request
     subtitleButton.click();
     subtitleButton.click();
-
     await new Promise((resolve) => setTimeout(resolve, 1000));
-
     const newEntries = performance.getEntriesByType("resource").slice(initialEntryCount);
-    console.log(`[DUAL SUBS] New entries detected: ${newEntries.length}`);
-    let timedtextUrl = null;
-
     for (const entry of newEntries) {
-      const isTimedtext = entry.name.includes("timedtext");
-      const hasPot = entry.name.includes("&pot=");
-
-      if (isTimedtext && hasPot) {
-        console.log("[DUAL SUBS] ✅ Found matching timedtext request with &pot= parameter!");
-        timedtextUrl = entry.name;
-        break;
+      if (entry.name.includes("timedtext") && entry.name.includes("&pot=")) {
+        console.log("[DUAL SUBS] ✅ Found matching timedtext request!");
+        return entry.name;
       }
     }
-
-    if (!timedtextUrl) {
-      console.log("[DUAL SUBS] ❌ No timedtext requests with &pot= parameter found");
-    }
-
-    return timedtextUrl;
+    console.log("[DUAL SUBS] ❌ No timedtext requests found");
+    return null;
   }
 
   async function addOneSubtitle(url, maxRetries = 5, delay = 1000) {
-    const video = document.querySelector("video");
+    // ... (This function is unchanged)
+     const video = document.querySelector("video");
     try {
       const response = await fetch(url);
       const subtitleData = (await response.text()).replaceAll("align:start position:0%", "");
@@ -298,11 +298,10 @@
   }
 
   function removeSubs() {
-    console.log(`[DUAL SUBS] Removing Subtitles.`);
+    console.log(`[DUAL SUBS] Removing existing subtitles.`);
     const video = document.getElementsByTagName("video")[0];
     if (!video) return;
     const tracks = video.getElementsByTagName("track");
-    console.log(`[DUAL SUBS] Removing tracks ${tracks}.`);
     Array.from(tracks).forEach(function (ele) {
       ele.track.mode = "hidden";
       ele.parentNode.removeChild(ele);
