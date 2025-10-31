@@ -1,7 +1,7 @@
 /* popup.css */
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  width: 300px;
+  width: 350px; /* Increased width to better fit content */
   padding: 10px;
   background-color: #f4f4f4;
   color: #333;
@@ -26,14 +26,33 @@ legend {
 
 .checkbox-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* More responsive grid */
   gap: 5px;
+  padding-top: 5px; /* Add some space */
 }
 
 .checkbox-item {
   display: flex;
   align-items: center;
 }
+
+/* NEW: Styles for the separator and collapsible section */
+.separator {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 10px 0;
+}
+
+.collapsible-section summary {
+  font-weight: bold;
+  cursor: pointer;
+  padding: 5px 0;
+}
+
+.collapsible-section summary:hover {
+  color: #0056b3;
+}
+
 
 .button-group {
   margin-top: 10px;
