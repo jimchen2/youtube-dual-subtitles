@@ -14,26 +14,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const removeSubsBtn = document.getElementById("removeSubsBtn");
   const errorBox = document.getElementById("errorBox");
   const reloadNotice = document.getElementById("reloadNotice");
-  const reloadBtn = document.getElementById("reloadBtn"); // <-- Added
+  const reloadBtn = document.getElementById("reloadBtn");
 
   // --- Configuration ---
-  // Define the 5 main official languages of UN + German, Japanese, Ukrainian
   const mainLangCodes = ["zh-Hans", "zh-Hant", "en", "ru", "es", "fr", "de", "ja", "uk"];
 
-  let langCheckboxes; // Will be populated after UI is built
+  let langCheckboxes;
 
   // --- UI Population ---
   function populateLanguageOptions() {
-    // Sort languages alphabetically by their Russian name for better usability
     allLanguages.sort((a, b) => a.languageName.simpleText.localeCompare(b.languageName.simpleText, "ru"));
 
-    // Create option groups for the target language dropdown
     const mainOptgroup = document.createElement("optgroup");
     mainOptgroup.label = "Main Languages";
     const otherOptgroup = document.createElement("optgroup");
     otherOptgroup.label = "Other Languages";
 
-    // Helper function to create a checkbox item
     const createCheckboxItem = (lang) => {
       const div = document.createElement("div");
       div.className = "checkbox-item";
@@ -43,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
       checkbox.value = lang.languageCode;
       const label = document.createElement("label");
       label.htmlFor = `lang-${lang.languageCode}`;
-      label.textContent = lang.languageName.simpleText; // Display full name
+      label.textContent = lang.languageName.simpleText;
       div.appendChild(checkbox);
       div.appendChild(label);
       return div;
@@ -51,16 +47,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     allLanguages.forEach((lang) => {
       const isMainLang = mainLangCodes.includes(lang.languageCode);
-
-      // 1. Populate Original Language Checkboxes
       const checkboxItem = createCheckboxItem(lang);
       if (isMainLang) {
         mainLangsContainer.appendChild(checkboxItem);
       } else {
         otherLangsContainer.appendChild(checkboxItem);
       }
-
-      // 2. Populate Target Language Dropdown
       const option = document.createElement("option");
       option.value = lang.languageCode;
       option.textContent = lang.languageName.simpleText;
@@ -73,15 +65,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
     targetLangSelect.appendChild(mainOptgroup);
     targetLangSelect.appendChild(otherOptgroup);
-
-    // After creating all checkboxes, select them for event handling
     langCheckboxes = document.querySelectorAll('#originalLangs input[type="checkbox"]');
   }
 
   // --- Settings Management ---
+
+  // START: New function to disable the Original Language checkbox that matches the Target Language
+  function updateOriginalLanguageOptions() {
+    const targetLang = targetLangSelect.value;
+
+    langCheckboxes.forEach(cb => {
+      const parentDiv = cb.parentElement;
+      // Check if this checkbox matches the selected target language
+      if (cb.value === targetLang) {
+        cb.checked = false; // It can't be selected if it's the target
+        cb.disabled = true;
+        parentDiv.classList.add('disabled');
+      } else {
+        // Ensure all other checkboxes are enabled
+        cb.disabled = false;
+        parentDiv.classList.remove('disabled');
+      }
+    });
+  }
+  // END: New function
+
   function loadSettings() {
     const defaults = {
-      originalLangs: ["es", "de", "ru", "uk", "zh-Hans"], // Default selection
+      originalLangs: ["es", "de", "ru", "uk", "zh-Hans"],
       targetLang: "en",
       autoPlay: true,
     };
@@ -91,6 +102,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       targetLangSelect.value = settings.targetLang;
       autoPlayCheckbox.checked = settings.autoPlay;
+
+      // After loading settings, update the checkbox states based on the target language
+      updateOriginalLanguageOptions();
     });
   }
 
@@ -105,25 +119,34 @@ document.addEventListener("DOMContentLoaded", () => {
       autoPlay: autoPlayCheckbox.checked,
     };
     chrome.storage.local.set(settings, () => {
-      // Show the notice after settings are successfully saved
-      // Use 'flex' because of the new CSS styling
       reloadNotice.style.display = "flex";
     });
   }
 
   // --- Event Listeners ---
   function addEventListeners() {
-    // Use event delegation for checkboxes for performance
+    // Save settings when any original language checkbox is changed
     document.getElementById("originalLangs").addEventListener("change", (event) => {
       if (event.target.type === "checkbox") {
         saveSettings();
       }
     });
-    targetLangSelect.addEventListener("change", saveSettings);
+
+    // When target language changes, update the original language options and then save
+    targetLangSelect.addEventListener("change", () => {
+      updateOriginalLanguageOptions(); // Update UI first
+      saveSettings(); // Then save the new state
+    });
+
     autoPlayCheckbox.addEventListener("change", saveSettings);
 
     selectAllBtn.addEventListener("click", () => {
-      langCheckboxes.forEach((cb) => (cb.checked = true));
+      langCheckboxes.forEach((cb) => {
+        // Only check a box if it is not disabled
+        if (!cb.disabled) {
+          cb.checked = true;
+        }
+      });
       saveSettings();
     });
 
@@ -145,17 +168,14 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // START: Added Event Listener for Reload Button
     reloadBtn.addEventListener("click", () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        // Ensure we're on a YouTube page before reloading
         if (tabs[0] && tabs[0].url.includes("youtube.com")) {
           chrome.tabs.reload(tabs[0].id);
-          window.close(); // Close the popup after sending the command
+          window.close();
         }
       });
     });
-    // END: Added Event Listener
 
     chrome.runtime.onMessage.addListener((request) => {
       if (request.type === "error") {

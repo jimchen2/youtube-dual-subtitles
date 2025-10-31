@@ -25,7 +25,6 @@ legend {
   padding: 0 5px;
 }
 
-/* START: Updated Notice Box Styles */
 .notice-box {
   padding: 8px 12px;
   background-color: #e7f3fe; /* Light blue info box */
@@ -54,7 +53,6 @@ legend {
 #reloadBtn:hover {
   background-color: #0056b3;
 }
-/* END: Updated Notice Box Styles */
 
 .checkbox-grid {
   display: grid;
@@ -67,6 +65,26 @@ legend {
   display: flex;
   align-items: center;
 }
+
+.checkbox-item.disabled {
+  color: #888; /* Grey out the label text */
+  cursor: not-allowed;
+  /* text-decoration: line-through; -- Removed for a cleaner look */
+}
+
+.checkbox-item.disabled label {
+  cursor: not-allowed;
+}
+
+/* START: Added rule to display "(Target)" text */
+.checkbox-item.disabled label::after {
+  content: " (Target language)"; /* The text to add */
+  font-style: italic;
+  font-size: 0.9em;
+  color: #007bff; /* Make it blue to stand out */
+}
+/* END: Added rule */
+
 
 .separator {
   border: none;
