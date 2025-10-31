@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const errorBox = document.getElementById("errorBox");
 
   // --- Configuration ---
-  // Define the 8 main languages as requested + Chinese variants
+  // Define the 5 main official languages of UN + German, Japanese, Ukrainian
   const mainLangCodes = ['zh-Hans', 'zh-Hant', 'en', 'ru', 'es', 'fr', 'de', 'ja', 'uk'];
 
   let langCheckboxes; // Will be populated after UI is built

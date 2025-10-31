@@ -1,6 +1,7 @@
 /* popup.css */
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.05em; /* Slightly larger base font size */
   width: 350px; /* Increased width to better fit content */
   padding: 10px;
   background-color: #f4f4f4;
