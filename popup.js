@@ -13,6 +13,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const clearAllBtn = document.getElementById("clearAll");
   const removeSubsBtn = document.getElementById("removeSubsBtn");
   const errorBox = document.getElementById("errorBox");
+  const reloadNotice = document.getElementById("reloadNotice");
+  const reloadBtn = document.getElementById("reloadBtn"); // <-- Added
 
   // --- Configuration ---
   // Define the 5 main official languages of UN + German, Japanese, Ukrainian
@@ -102,7 +104,11 @@ document.addEventListener("DOMContentLoaded", () => {
       targetLang: targetLangSelect.value,
       autoPlay: autoPlayCheckbox.checked,
     };
-    chrome.storage.local.set(settings);
+    chrome.storage.local.set(settings, () => {
+      // Show the notice after settings are successfully saved
+      // Use 'flex' because of the new CSS styling
+      reloadNotice.style.display = "flex";
+    });
   }
 
   // --- Event Listeners ---
@@ -138,6 +144,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
     });
+
+    // START: Added Event Listener for Reload Button
+    reloadBtn.addEventListener("click", () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        // Ensure we're on a YouTube page before reloading
+        if (tabs[0] && tabs[0].url.includes("youtube.com")) {
+          chrome.tabs.reload(tabs[0].id);
+          window.close(); // Close the popup after sending the command
+        }
+      });
+    });
+    // END: Added Event Listener
 
     chrome.runtime.onMessage.addListener((request) => {
       if (request.type === "error") {

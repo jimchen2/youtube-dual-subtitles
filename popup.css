@@ -25,6 +25,37 @@ legend {
   padding: 0 5px;
 }
 
+/* START: Updated Notice Box Styles */
+.notice-box {
+  padding: 8px 12px;
+  background-color: #e7f3fe; /* Light blue info box */
+  border: 1px solid #b3d7f7;
+  border-radius: 3px;
+  font-size: 0.95em;
+  color: #0056b3; /* Dark blue text */
+  /* Use flexbox to align text and button */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+#reloadBtn {
+  width: auto; /* Don't stretch the button */
+  flex-shrink: 0; /* Prevent button from shrinking */
+  padding: 4px 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+#reloadBtn:hover {
+  background-color: #0056b3;
+}
+/* END: Updated Notice Box Styles */
+
 .checkbox-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* More responsive grid */
@@ -37,7 +68,6 @@ legend {
   align-items: center;
 }
 
-/* NEW: Styles for the separator and collapsible section */
 .separator {
   border: none;
   border-top: 1px solid #ccc;
@@ -53,7 +83,6 @@ legend {
 .collapsible-section summary:hover {
   color: #0056b3;
 }
-
 
 .button-group {
   margin-top: 10px;
@@ -95,5 +124,5 @@ button {
   border-radius: 3px;
   min-height: 20px;
   font-size: 0.9em;
-  color: #d9534f; /* Red for errors */
+  color: #333; /* Default color for non-errors */
 }
