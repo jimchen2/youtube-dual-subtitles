@@ -1,6 +1,6 @@
 # YouTube Dual Subtitles
 
-https://chromewebstore.google.com/detail/youtube-dual-subtitles/kicgaahncmjpbgokkckmgglblgpjokmb
+[Install in Chrome](https://chromewebstore.google.com/detail/youtube-dual-subtitles/kicgaahncmjpbgokkckmgglblgpjokmb)
 
 
 ![Screenshot 4](images/Screenshot%20From%202025-11-01%2002-10-22.png)
