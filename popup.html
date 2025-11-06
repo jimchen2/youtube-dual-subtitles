@@ -7,20 +7,16 @@
 <body>
   <div class="container">
 
-    <!-- START: Notice Moved to Top and Button Added -->
     <div id="reloadNotice" class="notice-box" style="display: none;">
       <span>Reload tab to apply changes</span>
       <button id="reloadBtn">Reload</button>
     </div>
-    <!-- END: Notice Moved to Top and Button Added -->
 
     <fieldset>
       <legend>Original Languages</legend>
       <div id="originalLangs">
-        <!-- Main languages will be inserted here -->
         <div id="mainLangsContainer" class="checkbox-grid"></div>
         <hr class="separator">
-        <!-- Collapsible section for other languages -->
         <details class="collapsible-section">
             <summary>Other Languages</summary>
             <div id="otherLangsContainer" class="checkbox-grid"></div>
@@ -34,7 +30,6 @@
 
     <fieldset>
       <legend>Target/Native Language</legend>
-      <!-- Dropdown will be dynamically populated -->
       <select id="targetLang"></select>
     </fieldset>
 
@@ -43,6 +38,10 @@
       <div class="option">
         <input type="checkbox" id="autoPlay" />
         <label for="autoPlay">Play after displaying subtitles</label>
+      </div>
+      <div class="option">
+        <input type="checkbox" id="saveSubtitles" />
+        <label for="saveSubtitles">Save original subtitles to Downloads/.youtube-subtitles/</label>
       </div>
     </fieldset>
 
@@ -56,7 +55,6 @@
       <div id="errorBox">No errors.</div>
     </fieldset>
   </div>
-  <!-- Use type="module" to allow imports -->
   <script src="popup.js" type="module"></script>
 </body>
 </html>

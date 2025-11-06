@@ -9,6 +9,7 @@
     originalLangs: ["es", "de", "ru", "ua", "zh"],
     targetLang: "en",
     autoPlay: true,
+    saveSubtitles: false, // New setting
   };
 
   // Function to load settings from storage
@@ -22,6 +23,39 @@
   function sendErrorToPopup(message) {
     console.error(`[DUAL SUBS] Error: ${message}`);
     chrome.runtime.sendMessage({ type: "error", message: message });
+  }
+
+  // Function to save subtitle to downloads
+  async function saveSubtitleFile(videoId, langCode, subtitleData) {
+    if (!settings.saveSubtitles) return;
+    
+    try {
+      // Clean the subtitle data (remove YouTube-specific formatting)
+      const cleanedData = subtitleData.replaceAll("align:start position:0%", "");
+      
+      // Create a blob with the subtitle data
+      const blob = new Blob([cleanedData], { type: 'text/vtt' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create the filename structure: youtube-subtitles/langCode/videoId.vtt
+      const filename = `.youtube-subtitles/${langCode}/${videoId}.vtt`;
+      
+      // Send download request to background script
+      chrome.runtime.sendMessage({
+        type: "downloadSubtitle",
+        url: url,
+        filename: filename,
+        langCode: langCode,
+        videoId: videoId
+      });
+      
+      console.log(`[DUAL SUBS] Saving subtitle: ${filename}`);
+      
+      // Clean up the blob URL after a delay
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (error) {
+      console.error("[DUAL SUBS] Error saving subtitle:", error);
+    }
   }
 
   // --- MESSAGE LISTENER for commands from popup.js ---
@@ -112,6 +146,9 @@
     const url = new URL(subtitleURL);
     url.searchParams.set("fmt", "vtt");
     url.searchParams.delete("tlang"); // Ensure no translation on original
+    
+    // Get the language code from the URL
+    const langParam = url.searchParams.get("lang");
 
     // Create translated URL using target language from settings
     const transUrl = new URL(url);
@@ -120,8 +157,11 @@
     console.log(`[DUAL SUBS] Original Sub URL: ${url.toString()}`);
     console.log(`[DUAL SUBS] Translated Sub URL: ${transUrl.toString()}`);
 
-    await addOneSubtitle(transUrl.toString());
-    await addOneSubtitle(url.toString());
+    // Add original subtitle and save it if enabled
+    await addOneSubtitle(url.toString(), true, langParam);
+    
+    // Add translated subtitle (don't save this one)
+    await addOneSubtitle(transUrl.toString(), false);
 
     const subtitleButtonSelector = isMobile ? ".ytmClosedCaptioningButtonButton" : ".ytp-subtitles-button";
     const subtitleButton = document.querySelector(subtitleButtonSelector);
@@ -277,11 +317,18 @@
     return null;
   }
 
-  async function addOneSubtitle(url, maxRetries = 5, delay = 1000) {
+  async function addOneSubtitle(url, isOriginal = false, langCode = null, maxRetries = 5, delay = 1000) {
     const video = document.querySelector("video");
     try {
       const response = await fetch(url);
       const subtitleData = (await response.text()).replaceAll("align:start position:0%", "");
+      
+      // Save the original subtitle if enabled and this is the original (not translated)
+      if (isOriginal && settings.saveSubtitles && langCode) {
+        const videoId = extractYouTubeVideoID();
+        await saveSubtitleFile(videoId, langCode, subtitleData);
+      }
+      
       const track = document.createElement("track");
       track.src = "data:text/vtt," + encodeURIComponent(subtitleData);
       await new Promise((resolve) => setTimeout(resolve, delay));
@@ -290,7 +337,7 @@
     } catch (error) {
       if (maxRetries > 0) {
         await new Promise((resolve) => setTimeout(resolve, delay));
-        return addOneSubtitle(url, maxRetries - 1, delay * maxRetries);
+        return addOneSubtitle(url, isOriginal, langCode, maxRetries - 1, delay * maxRetries);
       }
     }
   }

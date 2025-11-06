@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const otherLangsContainer = document.getElementById("otherLangsContainer");
   const targetLangSelect = document.getElementById("targetLang");
   const autoPlayCheckbox = document.getElementById("autoPlay");
+  const saveSubtitlesCheckbox = document.getElementById("saveSubtitles"); // New element
   const selectAllBtn = document.getElementById("selectAll");
   const clearAllBtn = document.getElementById("clearAll");
   const removeSubsBtn = document.getElementById("removeSubsBtn");
@@ -70,31 +71,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Settings Management ---
 
-  // START: New function to disable the Original Language checkbox that matches the Target Language
   function updateOriginalLanguageOptions() {
     const targetLang = targetLangSelect.value;
 
     langCheckboxes.forEach(cb => {
       const parentDiv = cb.parentElement;
-      // Check if this checkbox matches the selected target language
       if (cb.value === targetLang) {
-        cb.checked = false; // It can't be selected if it's the target
+        cb.checked = false;
         cb.disabled = true;
         parentDiv.classList.add('disabled');
       } else {
-        // Ensure all other checkboxes are enabled
         cb.disabled = false;
         parentDiv.classList.remove('disabled');
       }
     });
   }
-  // END: New function
 
   function loadSettings() {
     const defaults = {
       originalLangs: ["es", "de", "ru", "uk", "zh-Hans"],
       targetLang: "en",
       autoPlay: true,
+      saveSubtitles: false, // New default
     };
     chrome.storage.local.get(defaults, (settings) => {
       langCheckboxes.forEach((cb) => {
@@ -102,8 +100,8 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       targetLangSelect.value = settings.targetLang;
       autoPlayCheckbox.checked = settings.autoPlay;
+      saveSubtitlesCheckbox.checked = settings.saveSubtitles; // Load save setting
 
-      // After loading settings, update the checkbox states based on the target language
       updateOriginalLanguageOptions();
     });
   }
@@ -117,6 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
       originalLangs: selectedLangs,
       targetLang: targetLangSelect.value,
       autoPlay: autoPlayCheckbox.checked,
+      saveSubtitles: saveSubtitlesCheckbox.checked, // Save the new setting
     };
     chrome.storage.local.set(settings, () => {
       reloadNotice.style.display = "flex";
@@ -125,24 +124,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Event Listeners ---
   function addEventListeners() {
-    // Save settings when any original language checkbox is changed
     document.getElementById("originalLangs").addEventListener("change", (event) => {
       if (event.target.type === "checkbox") {
         saveSettings();
       }
     });
 
-    // When target language changes, update the original language options and then save
     targetLangSelect.addEventListener("change", () => {
-      updateOriginalLanguageOptions(); // Update UI first
-      saveSettings(); // Then save the new state
+      updateOriginalLanguageOptions();
+      saveSettings();
     });
 
     autoPlayCheckbox.addEventListener("change", saveSettings);
+    saveSubtitlesCheckbox.addEventListener("change", saveSettings); // New listener
 
     selectAllBtn.addEventListener("click", () => {
       langCheckboxes.forEach((cb) => {
-        // Only check a box if it is not disabled
         if (!cb.disabled) {
           cb.checked = true;
         }
