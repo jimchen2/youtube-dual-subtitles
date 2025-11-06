@@ -33,30 +33,25 @@
       // Clean the subtitle data (remove YouTube-specific formatting)
       const cleanedData = subtitleData.replaceAll("align:start position:0%", "");
       
-      // Create a blob with the subtitle data
-      const blob = new Blob([cleanedData], { type: 'text/vtt' });
-      const url = URL.createObjectURL(blob);
-      
-      // Create the filename structure: youtube-subtitles/langCode/videoId.vtt
+      // Create the filename structure: youtube-subtitles/langCode/videoId.vtt (no leading dot)
       const filename = `.youtube-subtitles/${langCode}/${videoId}.vtt`;
       
-      // Send download request to background script
+      // Send download request to background script WITH THE RAW DATA
       chrome.runtime.sendMessage({
         type: "downloadSubtitle",
-        url: url,
+        data: cleanedData, // Send the actual subtitle text
         filename: filename,
         langCode: langCode,
         videoId: videoId
       });
       
-      console.log(`[DUAL SUBS] Saving subtitle: ${filename}`);
+      console.log(`[DUAL SUBS] Sending save request for subtitle: ${filename}`);
       
-      // Clean up the blob URL after a delay
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
     } catch (error) {
-      console.error("[DUAL SUBS] Error saving subtitle:", error);
+      console.error("[DUAL SUBS] Error preparing subtitle for saving:", error);
     }
   }
+
 
   // --- MESSAGE LISTENER for commands from popup.js ---
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
