@@ -9,6 +9,8 @@
     originalLangs: ["es", "de", "ru", "ua", "zh"],
     targetLang: "en",
     autoPlay: true,
+    fontSize: 150,
+    showNative: true // ADDED: Default setting
   };
 
   // Function to load settings from storage
@@ -16,6 +18,24 @@
     const data = await chrome.storage.local.get(settings);
     settings = data;
     console.log("[DUAL SUBS] Settings loaded:", settings);
+    
+    // Apply the CSS rule for font size upon loading settings
+    applyFontSize(settings.fontSize); 
+  }
+
+  // Function to inject and update styling
+  function applyFontSize(sizePercentage) {
+    let styleEl = document.getElementById("dual-subs-style");
+    if (!styleEl) {
+      styleEl = document.createElement("style");
+      styleEl.id = "dual-subs-style";
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `
+      video::cue {
+        font-size: ${sizePercentage}% !important;
+      }
+    `;
   }
 
   // Function to send errors to the popup
@@ -52,6 +72,7 @@
         originalPushState.apply(this, arguments);
         handleVideoNavigation();
       };
+      const originalReplaceState = history.replaceState;
       history.replaceState = function () {
         originalReplaceState.apply(this, arguments);
         handleVideoNavigation();
@@ -120,7 +141,10 @@
     console.log(`[DUAL SUBS] Original Sub URL: ${url.toString()}`);
     console.log(`[DUAL SUBS] Translated Sub URL: ${transUrl.toString()}`);
 
-    await addOneSubtitle(transUrl.toString());
+    // ADDED: Check the settings before showing the native track
+    if (settings.showNative) {
+      await addOneSubtitle(transUrl.toString());
+    }
     await addOneSubtitle(url.toString());
 
     const subtitleButtonSelector = isMobile ? ".ytmClosedCaptioningButtonButton" : ".ytp-subtitles-button";

@@ -78,7 +78,7 @@ legend {
 
 /* START: Added rule to display "(Target)" text */
 .checkbox-item.disabled label::after {
-  content: " (Target language)"; /* The text to add */
+  content: " (Native language)"; /* The text to add */
   font-style: italic;
   font-size: 0.9em;
   color: #007bff; /* Make it blue to stand out */

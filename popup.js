@@ -9,6 +9,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const otherLangsContainer = document.getElementById("otherLangsContainer");
   const targetLangSelect = document.getElementById("targetLang");
   const autoPlayCheckbox = document.getElementById("autoPlay");
+  
+  // ADDED: Show Native Language DOM element
+  const showNativeCheckbox = document.getElementById("showNative");
+
+  // Font Size DOM elements
+  const fontSizeSlider = document.getElementById("fontSizeSlider");
+  const fontSizeInput = document.getElementById("fontSizeInput");
+
   const selectAllBtn = document.getElementById("selectAll");
   const clearAllBtn = document.getElementById("clearAll");
   const removeSubsBtn = document.getElementById("removeSubsBtn");
@@ -70,31 +78,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Settings Management ---
 
-  // START: New function to disable the Original Language checkbox that matches the Target Language
   function updateOriginalLanguageOptions() {
     const targetLang = targetLangSelect.value;
 
     langCheckboxes.forEach(cb => {
       const parentDiv = cb.parentElement;
-      // Check if this checkbox matches the selected target language
       if (cb.value === targetLang) {
-        cb.checked = false; // It can't be selected if it's the target
+        cb.checked = false; 
         cb.disabled = true;
         parentDiv.classList.add('disabled');
       } else {
-        // Ensure all other checkboxes are enabled
         cb.disabled = false;
         parentDiv.classList.remove('disabled');
       }
     });
   }
-  // END: New function
 
   function loadSettings() {
     const defaults = {
       originalLangs: ["es", "de", "ru", "uk", "zh-Hans"],
       targetLang: "en",
       autoPlay: true,
+      fontSize: 150, 
+      showNative: true // ADDED: Default show native
     };
     chrome.storage.local.get(defaults, (settings) => {
       langCheckboxes.forEach((cb) => {
@@ -102,8 +108,12 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       targetLangSelect.value = settings.targetLang;
       autoPlayCheckbox.checked = settings.autoPlay;
+      showNativeCheckbox.checked = settings.showNative; // Load show native status
+      
+      // Load font size to both inputs
+      fontSizeSlider.value = settings.fontSize;
+      fontSizeInput.value = settings.fontSize;
 
-      // After loading settings, update the checkbox states based on the target language
       updateOriginalLanguageOptions();
     });
   }
@@ -113,10 +123,16 @@ document.addEventListener("DOMContentLoaded", () => {
       .filter((cb) => cb.checked)
       .map((cb) => cb.value);
 
+    // Get value from the number input (validated)
+    let finalFontSize = parseInt(fontSizeInput.value, 10);
+    if (isNaN(finalFontSize)) finalFontSize = 150;
+
     const settings = {
       originalLangs: selectedLangs,
       targetLang: targetLangSelect.value,
       autoPlay: autoPlayCheckbox.checked,
+      fontSize: finalFontSize,
+      showNative: showNativeCheckbox.checked // ADDED: Save show native status
     };
     chrome.storage.local.set(settings, () => {
       reloadNotice.style.display = "flex";
@@ -125,24 +141,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Event Listeners ---
   function addEventListeners() {
-    // Save settings when any original language checkbox is changed
     document.getElementById("originalLangs").addEventListener("change", (event) => {
       if (event.target.type === "checkbox") {
         saveSettings();
       }
     });
 
-    // When target language changes, update the original language options and then save
     targetLangSelect.addEventListener("change", () => {
-      updateOriginalLanguageOptions(); // Update UI first
-      saveSettings(); // Then save the new state
+      updateOriginalLanguageOptions(); 
+      saveSettings(); 
     });
 
     autoPlayCheckbox.addEventListener("change", saveSettings);
+    
+    // ADDED: Listener for Show Native toggle
+    showNativeCheckbox.addEventListener("change", saveSettings);
+
+    // --- FONT SIZE SYNCING ---
+    // When the slider is moved: update the number input instantly
+    fontSizeSlider.addEventListener("input", () => {
+      fontSizeInput.value = fontSizeSlider.value;
+    });
+    // When the user lets go of the slider: save
+    fontSizeSlider.addEventListener("change", saveSettings);
+
+    // When typing in the number box: update the slider if it's a valid number
+    fontSizeInput.addEventListener("input", () => {
+      let val = parseInt(fontSizeInput.value, 10);
+      if (!isNaN(val) && val >= 50 && val <= 300) {
+        fontSizeSlider.value = val;
+      }
+    });
+    // When the user clicks away (blur/change) or hits enter in the number box: 
+    // validate, clamp between 50 and 300, and save
+    fontSizeInput.addEventListener("change", () => {
+      let val = parseInt(fontSizeInput.value, 10);
+      if (isNaN(val)) val = 150;
+      if (val < 50) val = 50;
+      if (val > 300) val = 300;
+      
+      fontSizeInput.value = val;
+      fontSizeSlider.value = val;
+      saveSettings();
+    });
 
     selectAllBtn.addEventListener("click", () => {
       langCheckboxes.forEach((cb) => {
-        // Only check a box if it is not disabled
         if (!cb.disabled) {
           cb.checked = true;
         }

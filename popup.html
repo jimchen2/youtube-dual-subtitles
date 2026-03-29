@@ -15,7 +15,7 @@
     <!-- END: Notice Moved to Top and Button Added -->
 
     <fieldset>
-      <legend>Original Languages</legend>
+      <legend>New Languages to Show Subtitles</legend>
       <div id="originalLangs">
         <!-- Main languages will be inserted here -->
         <div id="mainLangsContainer" class="checkbox-grid"></div>
@@ -33,13 +33,32 @@
     </fieldset>
 
     <fieldset>
-      <legend>Target/Native Language</legend>
+      <legend>Native Language</legend>
       <!-- Dropdown will be dynamically populated -->
-      <select id="targetLang"></select>
+      <select id="targetLang" style="margin-bottom: 10px; width: 100%;"></select>
+      
+      <!-- ADDED: Show Native Language Checkbox -->
+      <div class="option" style="margin-top: 5px;">
+        <input type="checkbox" id="showNative" />
+        <label for="showNative">Show Native Language Subtitles</label>
+      </div>
     </fieldset>
 
     <fieldset>
       <legend>Options</legend>
+      
+      <!-- Font Size Slider and Number Input -->
+      <div class="option" style="margin-bottom: 10px; display: block;">
+        <label for="fontSizeSlider">Caption Font Size:</label>
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+          <input type="range" id="fontSizeSlider" min="50" max="300" step="10" value="150" style="flex-grow: 1;" />
+          <div style="display: flex; align-items: center;">
+            <input type="number" id="fontSizeInput" min="50" max="300" value="150" style="width: 60px; padding: 2px 4px;" />
+            <span style="margin-left: 4px;">%</span>
+          </div>
+        </div>
+      </div>
+
       <div class="option">
         <input type="checkbox" id="autoPlay" />
         <label for="autoPlay">Play after displaying subtitles</label>
