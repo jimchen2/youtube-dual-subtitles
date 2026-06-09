@@ -95,6 +95,15 @@
       fired = false;
       return;
     }
+
+    // Wait for any pre-roll ads to finish before attempting extraction
+    await waitForAdToFinish();
+    
+    // Check if the user navigated away while the ad was playing
+    if (extractYouTubeVideoID() !== newVideoID) {
+        return;
+    }
+
     if (newVideoID !== currentVideoID) {
       console.log("[DUAL SUBS] Video ID changed, resetting fired variable", currentVideoID, newVideoID);
       currentVideoID = newVideoID;
@@ -164,6 +173,21 @@
     if (video && video.paused) {
       console.log("[DUAL SUBS] Video was paused, attempting to play...");
       video.play();
+    }
+  }
+
+  async function waitForAdToFinish() {
+    while (true) {
+      const moviePlayer = document.querySelector("#movie_player");
+      const isAdShowing = moviePlayer && moviePlayer.classList.contains("ad-showing");
+      // Fallback check for mobile or different ad player states
+      const isAdOverlay = document.querySelector(".ytp-ad-player-overlay, .ytm-promoted-video-title");
+      
+      if (!isAdShowing && !isAdOverlay) {
+        break; // No ad is playing, proceed
+      }
+      console.log("[DUAL SUBS] Ad is currently playing, waiting...");
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 
