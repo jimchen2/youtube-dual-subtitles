@@ -78,6 +78,33 @@
         handleVideoNavigation();
       };
     }
+
+    // --- ADDED: MutationObserver for mid-roll ads ---
+    const adObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          const player = mutation.target;
+          const isAdShowing = player.classList.contains('ad-showing');
+          
+          if (isAdShowing && fired) {
+             console.log("[DUAL SUBS] Mid-roll ad started. Removing subs.");
+             removeSubs();
+             fired = false; // Reset so it re-fires when ad finishes
+          } else if (!isAdShowing && !fired && currentVideoID) {
+             console.log("[DUAL SUBS] Ad finished. Re-initializing.");
+             handleVideoNavigation();
+          }
+        }
+      });
+    });
+
+    const checkPlayer = setInterval(() => {
+      const player = document.querySelector("#movie_player");
+      if (player) {
+        adObserver.observe(player, { attributes: true, attributeFilter: ['class'] });
+        clearInterval(checkPlayer);
+      }
+    }, 1000);
   }
 
   // ***********************
